@@ -1,0 +1,37 @@
+#!/bin/sh
+killall -q someblocks  dwl foot xdg-desktop-portal xdg-desktop-portal-wlr
+sleep 1
+
+# Wait until the processes have been shut down
+
+
+
+
+
+
+if [ -z "${XDG_RUNTIME_DIR}" ]; then
+    export XDG_RUNTIME_DIR=/tmp/${UID}-runtime-dir
+    if [ ! -d "${XDG_RUNTIME_DIR}" ]; then
+        mkdir "${XDG_RUNTIME_DIR}"
+        chmod 0700 "${XDG_RUNTIME_DIR}"
+    fi
+fi
+
+
+
+
+export MOZ_ENABLE_WAYLAND=1
+export XDG_CURRENT_DESKTOP=sway
+export ELECTRON_OZONE_PLATFORM_HINT=wayland
+export XDG_SESSION_TYPE=wayland
+export SDL_VIDEODRIVER=wayland
+dbus-run-session   sh -c " someblocks -p | 
+	dwl -s ' 
+    dbus-update-activation-environment   SWAYSOCK WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE
+    gentoo-pipewire-launcher restart &
+	/usr/libexec/xdg-desktop-portal-wlr &
+    foot --server &
+    swaybg -i ~/pictures/pole.jpg -m fill &
+    wlr-randr --output HDMI-A-1  --mode 1920x1080@143.981003 Hz  &' > /dev/null"
+
+
