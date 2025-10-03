@@ -7,6 +7,7 @@ static const Block blocks[] = {
     {" ", "sensors | awk '/Core 0/ {print $3}'", 10, 0},
 
     {"[MEM] ", "awk '/MemTotal/ {total=$2} /MemAvailable/ {avail=$2} END {printf(\"%.0f%%\", avail/total * 100)}' /proc/meminfo", 60, 0},
+    {"[SWAP] ", "awk '/SwapTotal/ {total=$2} /SwapFree/ {free=$2} END {if (total>0) printf(\"%.0f%%\", (total-free)/total * 100); else print \"0%\"}' /proc/meminfo", 60, 0},
     {" ", "date '+%d.%m (%a)'", 60, 0},
     {" ", "date '+%H:%M  '", 5, 0},
 };
