@@ -2573,6 +2573,8 @@ void setfloating(Client *c, int floating) {
 // }
 
 void setfullscreen(Client *c, int fullscreen) {
+    if (c->isfullscreen == fullscreen)
+        return;
     c->isfullscreen = fullscreen;
     if (!c->mon || !client_surface(c)->mapped)
         return;
