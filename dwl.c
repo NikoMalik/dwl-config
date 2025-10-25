@@ -561,6 +561,7 @@ struct Pertag {
     float mfacts[LENGTH(tags) + 1];            /* mfacts per tag */
     unsigned int sellts[LENGTH(tags) + 1];     /* selected layouts */
     const Layout *ltidxs[LENGTH(tags) + 1][2]; /* matrix of tags and layouts indexes  */
+    Client *fullscreen_client[TAGCOUNT + 1];
 };
 
 /* function implementations */
@@ -2544,25 +2545,55 @@ void setfloating(Client *c, int floating) {
     drawbars();
 }
 
+// void setfullscreen(Client *c, int fullscreen) {
+//     c->isfullscreen = fullscreen;
+//     if (!c->mon || !client_surface(c)->mapped)
+//         return;
+//     c->bw = fullscreen ? 0 : BORDERPX(c);
+//     client_set_fullscreen(c, fullscreen);
+//     wlr_scene_node_reparent(&c->scene->node, layers[c->isfullscreen
+//                                                         ? LyrFS
+//                                                     : c->isfloating ? LyrFloat
+//                                                                     : LyrTile]);
+//
+//     if (fullscreen) {
+//         c->prev = c->geom;
+//         resize(c, c->mon->m, 0);
+//         c->mon->pertag->fullscreen_client[c->mon->pertag->curtag] = c;
+//
+//     } else if (c->mon->pertag->fullscreen_client[c->mon->pertag->curtag] == c) {
+//         c->mon->pertag->fullscreen_client[c->mon->pertag->curtag] = NULL;
+//     } else {
+//         /* restore previous size instead of arrange for floating windows since
+//          * client positions are set by the user and cannot be recalculated */
+//         resize(c, c->prev, 0);
+//     }
+//     arrange(c->mon);
+//     drawbars();
+// }
+
 void setfullscreen(Client *c, int fullscreen) {
     c->isfullscreen = fullscreen;
     if (!c->mon || !client_surface(c)->mapped)
         return;
+
     c->bw = fullscreen ? 0 : BORDERPX(c);
     client_set_fullscreen(c, fullscreen);
-    wlr_scene_node_reparent(&c->scene->node, layers[c->isfullscreen
-                                                        ? LyrFS
-                                                    : c->isfloating ? LyrFloat
-                                                                    : LyrTile]);
+    wlr_scene_node_reparent(&c->scene->node,
+                            layers[c->isfullscreen ? LyrFS : c->isfloating ? LyrFloat
+                                                                           : LyrTile]);
 
     if (fullscreen) {
         c->prev = c->geom;
         resize(c, c->mon->m, 0);
+        c->mon->pertag->fullscreen_client[c->mon->pertag->curtag] = c;
     } else {
-        /* restore previous size instead of arrange for floating windows since
-         * client positions are set by the user and cannot be recalculated */
+        /* restore previous size */
         resize(c, c->prev, 0);
+        if (c->mon->pertag->fullscreen_client[c->mon->pertag->curtag] == c)
+            c->mon->pertag->fullscreen_client[c->mon->pertag->curtag] = NULL;
     }
+
     arrange(c->mon);
     drawbars();
 }
@@ -3359,7 +3390,12 @@ void view(const Arg *arg) {
     selmon->lt[selmon->sellt] = selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt];
     selmon->lt[selmon->sellt ^ 1] = selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt ^ 1];
 
-    // NOTE: fix problem when game buffer still in other windows
+    /*  reset full screen when switch back to tag */
+    Client *fc = selmon->pertag->fullscreen_client[selmon->pertag->curtag];
+    if (fc)
+        setfullscreen(fc, 1);
+
+    /*  clean full screen for tags without fullcreen*/
     Client *c;
     wl_list_for_each(c, &clients, link) {
         if (c->isfullscreen && !(c->tags & (arg->ui & TAGMASK))) {
