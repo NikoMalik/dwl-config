@@ -3359,6 +3359,13 @@ void view(const Arg *arg) {
     selmon->lt[selmon->sellt] = selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt];
     selmon->lt[selmon->sellt ^ 1] = selmon->pertag->ltidxs[selmon->pertag->curtag][selmon->sellt ^ 1];
 
+    // NOTE: fix problem when game buffer still in other windows
+    for (Client *c = selmon->clients; c; c = c->next) {
+        if (c->isfullscreen && !(c->tags & (arg->ui & TAGMASK))) {
+            setfullscreen(c, 0);
+        }
+    }
+
     focusclient(focustop(selmon), 1);
     arrange(selmon);
     drawbars();
